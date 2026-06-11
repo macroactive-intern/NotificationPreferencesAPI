@@ -29,7 +29,7 @@ lets any caller lie about ownership by injecting a different ID into the request
 
 | Field | Appears on | Why it is dangerous if mass-assignable |
 |---|---|---|
-| `user_id` | `UserNotificationPreference`, `UserDevice` | Caller could claim records belong to a different user |
+| `user_id` | `UserNotificationPreference` | Caller could claim records belong to a different user |
 | `owner_id` | `UserProfile` | Caller could transfer profile ownership to any account |
 | `registered_by` | `UserDevice` | Caller could falsely attribute device registration to another user |
 
@@ -52,13 +52,12 @@ authenticated identity), never anything from the request body.
 **The pattern to follow in every controller / action:**
 
 ```php
-// CORRECT — ownership comes from the authenticated session
-$preference = UserNotificationPreference::create([
-    ...$request->validated(),       // safe: only fields listed in $fillable
-    'user_id' => $request->user()->id,  // set here, not from input
-]);
+// CORRECT — instantiate the model, set ownership directly, then fill safe fields
+$preference = new UserNotificationPreference($request->validated());
+$preference->user_id = $request->user()->id;  // set after fill, from the session
+$preference->save();
 
-// WRONG — never do this
+// WRONG — never pass ownership fields through create() or fill()
 $preference = UserNotificationPreference::create($request->all());
 // or
 $preference = UserNotificationPreference::create([
@@ -66,6 +65,11 @@ $preference = UserNotificationPreference::create([
     'user_id' => $request->input('user_id'),  // user-supplied — banned
 ]);
 ```
+
+> **Why `create([..., 'user_id' => $request->user()->id])` does NOT work:**
+> `create()` calls `fill()` internally. Since `user_id` is absent from `$fillable`, Eloquent
+> silently discards it — the record would be saved with a NULL `user_id` and hit the NOT NULL
+> constraint. Always set ownership fields via direct property assignment **after** `fill()`.
 
 Rules:
 - `user_id` is always taken from `Auth::id()` or `$request->user()->id`.
