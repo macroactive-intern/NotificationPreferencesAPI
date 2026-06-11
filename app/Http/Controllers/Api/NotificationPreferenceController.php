@@ -9,11 +9,9 @@ use Illuminate\Http\Request;
 
 class NotificationPreferenceController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        $preferences = UserNotificationPreference::where('user_id', $request->user()->id)->get();
-
-        return response()->json($preferences);
+        return response()->json(UserNotificationPreference::all());
     }
 
     public function update(Request $request, string $channel, string $event): JsonResponse
@@ -37,6 +35,7 @@ class NotificationPreferenceController extends Controller
             ->first();
 
         if ($preference) {
+            $this->authorize('update', $preference);
             $preference->fill($validated)->save();
 
             return response()->json($preference);

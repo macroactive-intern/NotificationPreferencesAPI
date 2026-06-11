@@ -34,6 +34,7 @@ class UserProfileController extends Controller
         $profile = UserProfile::where('owner_id', $request->user()->id)->first();
 
         if ($profile) {
+            $this->authorize('update', $profile);
             $profile->fill($validated)->save();
 
             return response()->json($profile);

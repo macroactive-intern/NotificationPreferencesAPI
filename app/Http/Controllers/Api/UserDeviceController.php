@@ -27,13 +27,13 @@ class UserDeviceController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $device = UserDevice::where('id', $id)
-            ->where('registered_by', $request->user()->id)
-            ->first();
+        $device = UserDevice::find($id);
 
         if (! $device) {
             return response()->json(['message' => 'Not found.'], 404);
         }
+
+        $this->authorize('delete', $device);
 
         $device->delete();
 
