@@ -11,10 +11,13 @@ class UserProfileController extends Controller
 {
     public function show(Request $request): JsonResponse
     {
+        // firstOrCreate behavior — owner_id is set directly because it is not in $fillable
         $profile = UserProfile::where('owner_id', $request->user()->id)->first();
 
         if (! $profile) {
-            return response()->json(null, 204);
+            $profile = new UserProfile();
+            $profile->owner_id = $request->user()->id;
+            $profile->save();
         }
 
         return response()->json($profile);
@@ -24,8 +27,8 @@ class UserProfileController extends Controller
     {
         $validated = $request->validate([
             'display_name' => 'sometimes|nullable|string|max:255',
-            'timezone'     => 'sometimes|nullable|string|max:100',
-            'locale'       => 'sometimes|nullable|string|max:10',
+            'timezone'     => 'sometimes|nullable|string|max:255',
+            'locale'       => 'sometimes|nullable|string|max:50',
         ]);
 
         $profile = UserProfile::where('owner_id', $request->user()->id)->first();

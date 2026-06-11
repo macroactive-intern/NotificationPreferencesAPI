@@ -14,6 +14,7 @@ class UserDeviceController extends Controller
         $validated = $request->validate([
             'device_token' => 'required|string|max:255|unique:user_devices,device_token',
             'platform'     => 'required|string|in:ios,android,web',
+            'active'       => 'sometimes|boolean',
         ]);
 
         // registered_by comes from the authenticated session, never from request input
