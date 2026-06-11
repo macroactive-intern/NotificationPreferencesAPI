@@ -14,6 +14,10 @@ class UserNotificationPreference extends Model
         'quiet_hours_end',
     ];
 
+    protected $casts = [
+        'enabled' => 'boolean',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

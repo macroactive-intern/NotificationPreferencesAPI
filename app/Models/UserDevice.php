@@ -12,6 +12,10 @@ class UserDevice extends Model
         'active',
     ];
 
+    protected $casts = [
+        'active' => 'boolean',
+    ];
+
     public function registeredBy()
     {
         return $this->belongsTo(User::class, 'registered_by');
