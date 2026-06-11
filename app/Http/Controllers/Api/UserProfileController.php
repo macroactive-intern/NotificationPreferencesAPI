@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\UserProfile;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -11,13 +12,18 @@ class UserProfileController extends Controller
 {
     public function show(Request $request): JsonResponse
     {
-        // firstOrCreate behavior — owner_id is set directly because it is not in $fillable
-        $profile = UserProfile::where('owner_id', $request->user()->id)->first();
+        $userId  = $request->user()->id;
+        $profile = UserProfile::where('owner_id', $userId)->first();
 
         if (! $profile) {
-            $profile = new UserProfile();
-            $profile->owner_id = $request->user()->id;
-            $profile->save();
+            try {
+                $profile           = new UserProfile();
+                $profile->owner_id = $userId;
+                $profile->save();
+            } catch (UniqueConstraintViolationException) {
+                // Concurrent request won the race — read the row it created
+                $profile = UserProfile::where('owner_id', $userId)->first();
+            }
         }
 
         return response()->json($profile);
@@ -31,7 +37,8 @@ class UserProfileController extends Controller
             'locale'       => 'sometimes|nullable|string|max:50',
         ]);
 
-        $profile = UserProfile::where('owner_id', $request->user()->id)->first();
+        $userId  = $request->user()->id;
+        $profile = UserProfile::where('owner_id', $userId)->first();
 
         if ($profile) {
             $this->authorize('update', $profile);
@@ -40,11 +47,19 @@ class UserProfileController extends Controller
             return response()->json($profile);
         }
 
-        // Creating a new profile: owner_id set directly, never from input
-        $profile = new UserProfile($validated);
-        $profile->owner_id = $request->user()->id;
-        $profile->save();
+        try {
+            $profile           = new UserProfile($validated);
+            $profile->owner_id = $userId;
+            $profile->save();
 
-        return response()->json($profile, 201);
+            return response()->json($profile, 201);
+        } catch (UniqueConstraintViolationException) {
+            // Concurrent request created the profile — update the row it created
+            $profile = UserProfile::where('owner_id', $userId)->first();
+            $this->authorize('update', $profile);
+            $profile->fill($validated)->save();
+
+            return response()->json($profile);
+        }
     }
 }

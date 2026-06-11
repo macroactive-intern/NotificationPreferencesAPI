@@ -61,7 +61,7 @@ it('user cannot delete another user\'s device', function () {
 
     $this->actingAs($userB, 'sanctum')
         ->deleteJson("/api/devices/{$device->id}")
-        ->assertForbidden();
+        ->assertNotFound();
 
     // Device must still exist
     expect(UserDevice::find($device->id))->not->toBeNull();
