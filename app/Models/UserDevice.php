@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class UserDevice extends Model
 {
-    // UNFIXED — $guarded = [] allows every column through fill(). Phase 5 replaces this with $fillable.
-    protected $guarded = [];
+    protected $fillable = [
+        'device_token',
+        'platform',
+        'active',
+    ];
 }
