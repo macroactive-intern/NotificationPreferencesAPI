@@ -12,7 +12,7 @@ class NotificationPreferenceController extends Controller
 {
     public function index(): JsonResponse
     {
-        return response()->json(UserNotificationPreference::all());
+        return response()->json(UserNotificationPreference::paginate(20));
     }
 
     public function update(Request $request, string $channel, string $event): JsonResponse
