@@ -8,10 +8,22 @@ use App\Models\UserProfile;
 it('authenticated user can get their profile', function () {
     $user = User::factory()->create();
 
+    $profile = new UserProfile(['display_name' => 'Test User']);
+    $profile->owner_id = $user->id;
+    $profile->save();
+
     $this->actingAs($user, 'sanctum')
         ->getJson('/api/profile')
         ->assertOk()
         ->assertJsonFragment(['owner_id' => $user->id]);
+});
+
+it('returns 404 when profile does not exist', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user, 'sanctum')
+        ->getJson('/api/profile')
+        ->assertNotFound();
 });
 
 // ── update ────────────────────────────────────────────────────────────────────

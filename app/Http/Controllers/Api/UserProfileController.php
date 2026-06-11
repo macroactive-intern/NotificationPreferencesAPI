@@ -12,18 +12,10 @@ class UserProfileController extends Controller
 {
     public function show(Request $request): JsonResponse
     {
-        $userId  = $request->user()->id;
-        $profile = UserProfile::where('owner_id', $userId)->first();
+        $profile = UserProfile::where('owner_id', $request->user()->id)->first();
 
         if (! $profile) {
-            try {
-                $profile           = new UserProfile();
-                $profile->owner_id = $userId;
-                $profile->save();
-            } catch (UniqueConstraintViolationException) {
-                // Concurrent request won the race — read the row it created
-                $profile = UserProfile::where('owner_id', $userId)->first();
-            }
+            return response()->json(['message' => 'Profile not found.'], 404);
         }
 
         return response()->json($profile);
@@ -41,13 +33,13 @@ class UserProfileController extends Controller
         $profile = UserProfile::where('owner_id', $userId)->first();
 
         if ($profile) {
-            $this->authorize('update', $profile);
             $profile->fill($validated)->save();
 
             return response()->json($profile);
         }
 
         try {
+            // Ownership field set directly — owner_id is absent from $fillable
             $profile           = new UserProfile($validated);
             $profile->owner_id = $userId;
             $profile->save();
@@ -56,7 +48,6 @@ class UserProfileController extends Controller
         } catch (UniqueConstraintViolationException) {
             // Concurrent request created the profile — update the row it created
             $profile = UserProfile::where('owner_id', $userId)->first();
-            $this->authorize('update', $profile);
             $profile->fill($validated)->save();
 
             return response()->json($profile);

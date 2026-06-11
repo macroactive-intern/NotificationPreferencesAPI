@@ -17,10 +17,14 @@ class NotificationPreferenceController extends Controller
 
     public function update(Request $request, string $channel, string $event): JsonResponse
     {
-        // Validate the route parameter — channel comes from the URL, not the body
-        validator(['channel' => $channel], [
-            'channel' => 'required|in:email,push,sms',
-        ])->validate();
+        // Validate both route parameters — they come from the URL, not the body
+        validator(
+            ['channel' => $channel, 'event' => $event],
+            [
+                'channel' => 'required|in:email,push,sms',
+                'event'   => 'required|string|max:100|alpha_dash',
+            ]
+        )->validate();
 
         $validated = $request->validate([
             'enabled'           => 'sometimes|boolean',
@@ -28,22 +32,21 @@ class NotificationPreferenceController extends Controller
             'quiet_hours_end'   => 'sometimes|nullable|date_format:H:i',
         ]);
 
-        // Ownership fields set directly, never via fill(), because user_id is
-        // intentionally absent from $fillable.
+        // OwnedByUserScope already filters all queries to the authenticated user,
+        // so no explicit user_id WHERE clause is needed here.
         $userId     = $request->user()->id;
-        $preference = UserNotificationPreference::where('user_id', $userId)
-            ->where('channel', $channel)
+        $preference = UserNotificationPreference::where('channel', $channel)
             ->where('event_type', $event)
             ->first();
 
         if ($preference) {
-            $this->authorize('update', $preference);
             $preference->fill($validated)->save();
 
             return response()->json($preference);
         }
 
         try {
+            // Ownership field set directly — user_id is absent from $fillable
             $preference             = new UserNotificationPreference($validated);
             $preference->user_id    = $userId;
             $preference->channel    = $channel;
@@ -53,11 +56,9 @@ class NotificationPreferenceController extends Controller
             return response()->json($preference, 201);
         } catch (UniqueConstraintViolationException) {
             // Concurrent request created the same record — update the row it created
-            $preference = UserNotificationPreference::where('user_id', $userId)
-                ->where('channel', $channel)
+            $preference = UserNotificationPreference::where('channel', $channel)
                 ->where('event_type', $event)
                 ->first();
-            $this->authorize('update', $preference);
             $preference->fill($validated)->save();
 
             return response()->json($preference);

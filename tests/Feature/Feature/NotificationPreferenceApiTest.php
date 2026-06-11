@@ -77,3 +77,11 @@ it('invalid channel is rejected', function () {
         ->putJson('/api/notification-preferences/fax/newsletter', ['enabled' => true])
         ->assertUnprocessable();
 });
+
+it('invalid event type is rejected', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user, 'sanctum')
+        ->putJson('/api/notification-preferences/email/bad event!', ['enabled' => true])
+        ->assertUnprocessable();
+});
