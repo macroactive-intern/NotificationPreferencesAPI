@@ -13,4 +13,9 @@ class UserNotificationPreference extends Model
         'quiet_hours_start',
         'quiet_hours_end',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

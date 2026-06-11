@@ -46,4 +46,19 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function notificationPreferences()
+    {
+        return $this->hasMany(UserNotificationPreference::class);
+    }
+
+    public function profile()
+    {
+        return $this->hasOne(UserProfile::class, 'owner_id');
+    }
+
+    public function devices()
+    {
+        return $this->hasMany(UserDevice::class, 'registered_by');
+    }
 }

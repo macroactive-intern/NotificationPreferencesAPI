@@ -11,4 +11,9 @@ class UserProfile extends Model
         'timezone',
         'locale',
     ];
+
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
 }

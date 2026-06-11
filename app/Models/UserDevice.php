@@ -11,4 +11,9 @@ class UserDevice extends Model
         'platform',
         'active',
     ];
+
+    public function registeredBy()
+    {
+        return $this->belongsTo(User::class, 'registered_by');
+    }
 }
